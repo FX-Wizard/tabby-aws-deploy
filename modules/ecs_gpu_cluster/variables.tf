@@ -33,3 +33,8 @@ variable "lb_target_group_arn" {
   description = "ARN of the load balancer target group"
   type        = string
 }
+
+variable "container_name" { # must match name of container in container definition
+  description = "Name of the container as appears in container definition"
+  type        = string
+}

@@ -50,7 +50,8 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
 
 # Security Group for EFS
 resource "aws_security_group" "efs_security_group" {
-  name_prefix = var.name_prefix
+  name_prefix = "${var.name_prefix}-efs"
+  description = "${var.name_prefix} EFS Security Group"
   vpc_id      = var.vpc_id
 
   ingress {
@@ -68,8 +69,8 @@ resource "aws_security_group" "efs_security_group" {
 # Allow ecs_security_group egress to efs_security_group
 resource "aws_security_group_rule" "ecs_to_efs_egress_rule" {
   type                     = "egress"
-  from_port                = 2049
-  to_port                  = 2049
+  from_port                = 0
+  to_port                  = 65535
   protocol                 = "tcp"
   source_security_group_id = aws_security_group.efs_security_group.id
   security_group_id        = var.security_group_id
@@ -104,7 +105,7 @@ resource "aws_efs_access_point" "efs_access_point" {
   }
 
   root_directory {
-    path = "/ecs-volume-data"
+    path = "/${var.name_prefix}-volume-data"
     creation_info {
       owner_uid = 1000
       owner_gid = 1000
@@ -164,7 +165,7 @@ resource "aws_autoscaling_group" "ecs_gpu_asg" {
 
 # ECS Task Definition
 resource "aws_ecs_task_definition" "gpu_task_definition" {
-  family                   = "gpu-task"
+  family                   = "${var.name_prefix}-gpu-task"
   requires_compatibilities = ["EC2"]
   network_mode             = "awsvpc"
   cpu                      = 512
@@ -172,7 +173,7 @@ resource "aws_ecs_task_definition" "gpu_task_definition" {
   task_role_arn = aws_iam_role.ecs_task_execution_role.arn
 
   volume {
-    name = "${var.name_prefix}-efs-volume"
+    name = "tabby-efs-volume"
 
     efs_volume_configuration {
       file_system_id     = aws_efs_file_system.efs_file_system.id
@@ -186,6 +187,10 @@ resource "aws_ecs_task_definition" "gpu_task_definition" {
   }
 
   container_definitions = var.container_definitions
+
+  depends_on = [
+    aws_efs_mount_target.efs_mount_target
+  ]
 }
 
 # ECS Service
@@ -204,7 +209,7 @@ resource "aws_ecs_service" "gpu_service" {
 
   load_balancer {
     target_group_arn = var.lb_target_group_arn
-    container_name   = "${var.name_prefix}-container"
+    container_name   = var.container_name
     container_port   = 8080
   }
 }

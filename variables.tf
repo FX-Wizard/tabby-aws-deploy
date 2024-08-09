@@ -30,6 +30,29 @@ variable "name_prefix" {
   default     = "tabby"
 }
 
+# Loadbalancer variables
+# Domain name required for SSL certificate generation
+variable "is_public" {
+  description = "Whether the App should be public or not"
+  type        = bool
+  default     = false
+}
+
+variable "domain_name" {
+  description = "The domain name to use for the App. Only needed if public"
+  type        = string
+}
+
+variable "public_subnet_ids" {
+  description = "List of public subnet ids to deploy load balancer into. Only needed if public"
+  type        = list(string)
+}
+
+variable "acm_certificate_arn" {
+  description = "ARN of the ACM certificate to use for the load balancer. Only needed if public"
+  type        = string
+}
+
 # Tabby variables
 variable "tabby_model" {
   description = "Code completion AI model to use with Tabby"
